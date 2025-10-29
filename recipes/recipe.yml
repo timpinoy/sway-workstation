@@ -3,43 +3,88 @@
 # image will be published to ghcr.io/<user>/<name>
 name: sway-workstation
 # description will be included in the image's metadata
-description: This is my personal OS image.
+description: Customized Fedora sway atomic image.
 
 # the base image to build on top of (FROM) and the version tag to use
-base-image: ghcr.io/ublue-os/silverblue-main
-image-version: 42 # latest is also supported if you want new updates ASAP
+base-image: ghcr.io/ublue-os/sway-atomic-main
+image-version: latest # latest is also supported if you want new updates ASAP
 
 # module configuration, executed in order
 # you can include multiple instances of the same module
 modules:
+  - type: rpm-ostree
+    install:
+      - fontawesome-fonts-all
+      - fcitx5
+      - fcitx5-autostart
+      - fcitx5-mozc
+      - fcitx5-configtool
+      - libavcodec-freeworld
+      - mate-polkit
+
   - type: files
     files:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
 
-  - type: dnf
-    repos:
-      copr:
-        - atim/starship
-    install:
-      packages:
-        - micro
-        - starship
-    remove:
-      packages:
-        # example: removing firefox (in favor of the flatpak)
-        # "firefox" is the main package, "firefox-langpacks" is a dependency
-        - firefox
-        - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
+  - type: fonts
+    fonts:
+      google-fonts:
+        - Source Code Pro
+      nerd-fonts:
+        - FiraCode
+        - Iosevka
+        - JetBrainsMono
+
+  # - type: dnf
+  #   repos:
+  #     copr:
+  #       - atim/starship
+  #   install:
+  #     packages:
+  #       - micro
+  #       - starship
+  #   remove:
+  #     packages:
+  #       # example: removing firefox (in favor of the flatpak)
+  #       # "firefox" is the main package, "firefox-langpacks" is a dependency
+  #       - firefox
+  #       - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
+
+  # - type: default-flatpaks
+  #   configurations:
+  #     - notify: true # Send notification after install/uninstall is finished (true/false)
+  #       scope: system
+  #       # If no repo information is specified, Flathub will be used by default
+  #       install: # system flatpaks we want all users to have and not remove
+  #         - org.mozilla.firefox
+  #     - scope: user # Also add Flathub user repo, but no user packages
+
+  - type: script
+    snippets:
+      - flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+      - flatpak remote-modify --enable flathub
+      - flatpak install --reinstall flathub $(flatpak list --app-runtime=org.fedoraproject.Platform --columns=application | tail -n +1 )
+      - flatpak remote-delete fedora
+
+  - type: systemd
+    system:
+      enabled:
+        - systemd-timesyncd
 
   - type: default-flatpaks
     configurations:
-      - notify: true # Send notification after install/uninstall is finished (true/false)
-        scope: system
-        # If no repo information is specified, Flathub will be used by default
-        install: # system flatpaks we want all users to have and not remove
-          - org.mozilla.firefox
-          - org.gnome.Loupe
-      - scope: user # Also add Flathub user repo, but no user packages
+    - notify: false
+      scope: system
+      repo:
+        url: https://flathub.org/repo/flathub.flatpakrepo
+        name: flathub
+        title: Flathub
+      install:
+        - com.synology.SynologyDrive
+        - io.podman_desktop.PodmanDesktop
+        - org.fedoraproject.MediaWriter
+        - org.videolan.VLC
+        - md.obsidian.Obsidian
 
   - type: signing # this sets up the proper policy & signing files for signed images to work fully
