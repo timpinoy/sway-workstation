@@ -19,7 +19,6 @@ modules:
       - fcitx5-autostart
       - fcitx5-mozc
       - fcitx5-configtool
-      - libavcodec-freeworld
       - mate-polkit
 
   - type: files
